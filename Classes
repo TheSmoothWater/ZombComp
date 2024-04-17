@@ -1,0 +1,53 @@
+from __future__ import annotations
+
+
+class Grid:
+
+    def __init__(self, xlength: int = None, ylength: int = None) -> None:
+        if xlength is None or ylength is None:
+            self.xlength, self.ylength = 10, 10
+            self.gridlist: list = [['*'] * self.xlength] * self.ylength
+        else:
+            self.xlength, self.ylength = xlength, ylength
+            self.gridlist: list = [[0] * xlength for i in range(ylength)]
+
+    def __str__(self) -> str:
+        str = f'Grid({self.xlength}, {self.ylength})'
+
+    def print(self) -> str:
+        for i in range(self.ylength):
+            for j in range(self.xlength):
+                print(self.gridlist[i][j], sep="", end="")
+            print()
+
+
+class Point:
+
+    def __init__(self, xcord: int, ycord: int) -> None:
+        self.xcord: int = xcord
+        self.ycord: int = ycord
+
+    def changeLocation(self, x: int, y: int) -> None:
+        self.xcord: int = x
+        self.ycord: int = y
+
+    def getLocation(self) -> tuple[int, int]:
+        return self.xcord, self.ycord
+
+    def colliding(self, otherpoint: Point) -> bool:
+        return self.getLocation() == otherpoint.getLocation()
+
+    def __str__(self) -> str:
+        return f"x: {self.xcord}, y: {self.ycord}"
+
+# Skeleton code for a superclass for both alive human and zombies
+# Maybe they don't have anything in common. Edit later
+class Human:
+    def walk(self) -> None:
+        pass
+
+    def fight(self) -> None:
+        pass
+
+    def rareChance(self) -> None:
+        pass
