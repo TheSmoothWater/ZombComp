@@ -1,4 +1,7 @@
 from __future__ import annotations
+import matplotlib.pyplot as plt
+import numpy as np
+import random
 
 
 class Grid:
@@ -12,9 +15,9 @@ class Grid:
             self.gridlist: list = [[0] * xlength for i in range(ylength)]
 
     def __str__(self) -> str:
-        str = f'Grid({self.xlength}, {self.ylength})'
+        return f'Grid({self.xlength}, {self.ylength})'
 
-    def print(self) -> str:
+    def print_grid(self) -> None:
         for i in range(self.ylength):
             for j in range(self.xlength):
                 print(self.gridlist[i][j], sep="", end="")
@@ -27,27 +30,80 @@ class Point:
         self.xcord: int = xcord
         self.ycord: int = ycord
 
-    def changeLocation(self, x: int, y: int) -> None:
+    def change_location(self, x: int, y: int) -> None:
         self.xcord: int = x
         self.ycord: int = y
 
-    def getLocation(self) -> tuple[int, int]:
+    def shift_x(self, x: int) -> None:
+        self.xcord += x
+
+    def shift_y(self, y: int) -> None:
+        self.ycord += y
+
+    def change_x(self, x: int) -> None:
+        self.xcord: int = x
+
+    def change_y(self, y: int) -> None:
+        self.ycord: int = y
+
+    def get_location(self) -> tuple[int, int]:
         return self.xcord, self.ycord
 
     def colliding(self, otherpoint: Point) -> bool:
-        return self.getLocation() == otherpoint.getLocation()
+        return self.get_location() == otherpoint.get_location()
 
     def __str__(self) -> str:
         return f"x: {self.xcord}, y: {self.ycord}"
 
-# Skeleton code for a superclass for both alive human and zombies
-# Maybe they don't have anything in common. Edit later
-class Human:
+
+# Beings that are able to move aka not removed
+class Locomotory:
+    # Should be a static variable
+    number_of_removed: int = 0
+    # Randint is inclusive
+    def __init__(self):
+        self.health = random.randint(1, 100)
+        # Humans and zombies will spawn in separate places and humans shouldn't overlap
+        self.position: Point = Point(0, 0)
+        self.strength = random.randint(0, 100)
+        self.removed: bool = False
+
+    def get_health(self) -> int:
+        return self.health
+
+    def get_position(self) -> Point:
+        return self.position
+    
+    def get_strength(self) -> int:
+        return self.strength
+
+
+class Susceptible(Locomotory):
+    def __init__(self):
+        # Understand this line later
+        super().__init__()
+        self.health = random.randint(75, 100)
+        self.position: Point = Point(random.randint(0, 300), random.randint(0, 500))
+        self.strength = random.randint(10,50)
+
     def walk(self) -> None:
-        pass
+        self.position.shift_x(random.randint(-5,5))
+        self.position.shift_y(random.randint(-5,5))
 
-    def fight(self) -> None:
-        pass
+    #Come back when other methods are complete
+    def fight(self, zombie: Infected) -> None:
+        self.health -= zombie.get_strength()
 
-    def rareChance(self) -> None:
-        pass
+class Infected(Locomotory):
+    def __init__(self):
+        super().__init__()
+        self.health = random.randint(1, 25)
+        self.position: Point = Point(random.randint(800, 1000), random.randint(500, 1000))
+        self.strength = random.randint(30, 50)
+
+    def walk(self) -> None:
+        self.position.shift_x(random.randint(-3, 3))
+        self.position.shift_y(random.randint(-3, 3))
+
+    def fight(self, human: Susceptible) -> None:
+        self.health -= human.get_strength()
