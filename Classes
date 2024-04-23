@@ -1,27 +1,28 @@
 from __future__ import annotations
 import matplotlib.pyplot as plt
 import numpy as np
+import itertools
 import random
 
 
-class Grid:
-
-    def __init__(self, xlength: int = None, ylength: int = None) -> None:
-        if xlength is None or ylength is None:
-            self.xlength, self.ylength = 10, 10
-            self.gridlist: list = [['*'] * self.xlength] * self.ylength
-        else:
-            self.xlength, self.ylength = xlength, ylength
-            self.gridlist: list = [[0] * xlength for i in range(ylength)]
-
-    def __str__(self) -> str:
-        return f'Grid({self.xlength}, {self.ylength})'
-
-    def print_grid(self) -> None:
-        for i in range(self.ylength):
-            for j in range(self.xlength):
-                print(self.gridlist[i][j], sep="", end="")
-            print()
+# class Grid:
+#
+#     def __init__(self, xlength: int = None, ylength: int = None) -> None:
+#         if xlength is None or ylength is None:
+#             self.xlength, self.ylength = 10, 10
+#             self.gridlist: list = [['*'] * self.xlength] * self.ylength
+#         else:
+#             self.xlength, self.ylength = xlength, ylength
+#             self.gridlist: list = [[0] * xlength for i in range(ylength)]
+#
+#     def __str__(self) -> str:
+#         return f'Grid({self.xlength}, {self.ylength})'
+#
+#     def print_grid(self) -> None:
+#         for i in range(self.ylength):
+#             for j in range(self.xlength):
+#                 print(self.gridlist[i][j], sep="", end="")
+#             print()
 
 
 class Point:
@@ -59,8 +60,8 @@ class Point:
 # Beings that are able to move aka not removed
 class Locomotory:
     # Should be a static variable
-    number_of_removed: int = 0
     # Randint is inclusive
+
     def __init__(self):
         self.health = random.randint(1, 100)
         # Humans and zombies will spawn in separate places and humans shouldn't overlap
@@ -71,9 +72,6 @@ class Locomotory:
     def get_health(self) -> int:
         return self.health
 
-    def get_position(self) -> Point:
-        return self.position
-    
     def get_strength(self) -> int:
         return self.strength
 
@@ -83,22 +81,23 @@ class Susceptible(Locomotory):
         # Understand this line later
         super().__init__()
         self.health = random.randint(75, 100)
-        self.position: Point = Point(random.randint(0, 300), random.randint(0, 500))
+        self.position: Point = Point(0,0)
         self.strength = random.randint(10,50)
 
     def walk(self) -> None:
         self.position.shift_x(random.randint(-5,5))
         self.position.shift_y(random.randint(-5,5))
 
-    #Come back when other methods are complete
+    # Come back when other methods are complete
     def fight(self, zombie: Infected) -> None:
         self.health -= zombie.get_strength()
+
 
 class Infected(Locomotory):
     def __init__(self):
         super().__init__()
         self.health = random.randint(1, 25)
-        self.position: Point = Point(random.randint(800, 1000), random.randint(500, 1000))
+        self.position: Point = Point(0, 0)
         self.strength = random.randint(30, 50)
 
     def walk(self) -> None:
@@ -107,3 +106,105 @@ class Infected(Locomotory):
 
     def fight(self, human: Susceptible) -> None:
         self.health -= human.get_strength()
+
+
+class Warrior(Susceptible):
+    def __init__(self):
+        super().__init__()
+        self.strength = random.randint(50, 100)
+
+    def walk(self):
+        self.position.shift_x(random.randint(-10, 10))
+        self.position.shift_y(random.randint(-10, 10))
+
+
+class Mutated(Infected):
+    def __init__(self):
+        super().__init__()
+        self.strength = random.randint(60,100)
+
+    def walk(self):
+        self.position.shift_x(random.randint(-8, 8))
+        self.position.shift_y(random.randint(-8, 8))
+
+    def hunt(self):
+        self.position.shift_x(random.randint(-20, 20))
+        self.position.shift_y(random.randint(-20, 20))
+
+
+# Make sure domain and range start from negatives just in case
+def simulation(grid_domain: tuple[int, int], grid_range: tuple[int, int], start_num_of_susceptible: int, start_num_of_infected: int)-> None:
+    def inside_grid(being: Locomotory) -> bool:
+        # In case the simplified expression doesn't work
+        # (being.position.xcord >= grid_domain[0] and being.position.xcord <= grid_domain[1]
+        #  and being.position.ycord >= grid_range[0] and being.position.ycord <= grid_range[1])
+        return (grid_domain[0] <= being.position.xcord <= grid_domain[1]
+                and grid_range[0] <= being.position.ycord <= grid_range[1])
+
+
+    if grid_domain[0] < 100 and grid_domain[1] < 100 or grid_range[0] < 100 and grid_range[1] < 100:
+        raise ValueError("Grid Domain or Grid Domain should be at least 100.")
+    if start_num_of_susceptible < 1 or start_num_of_infected < 1:
+        raise ValueError("Initial number of susceptible or infected must be greater than 0.")
+
+    total_population: int = start_num_of_susceptible + start_num_of_infected
+    humans: list[Susceptible] = []
+    zombies: list[Infected] = []
+    index = 0
+    starting_human_locations: list[tuple[int, int]] = []
+    starting_zombie_location: list[tuple[int, int]] = []
+
+    for i in range(start_num_of_susceptible):
+        humans.append(Susceptible())
+        starting_human_locations.append(humans[i].position.get_location())
+        humans[index].position.change_location(random.randint(grid_domain[0] // 4, grid_domain[1] // 4),
+                                               random.randint(grid_range[0] // 4, grid_range[1] // 4))
+        # If the starting location is already taken, it will keep changing locations until it finds an empty one
+        while humans[index].position.get_location() in starting_human_locations[index]:
+            humans[index].position.change_location(random.randint(grid_domain[0] // 4, grid_domain[1] // 4),
+                                                   random.randint(grid_range[0] // 4, grid_range[1] // 4))
+        index += 1
+
+    index = 0
+    for i in range(start_num_of_infected):
+        zombies.append(Infected())
+        starting_zombie_location.append(zombies[i].position.get_location())
+        zombies[index].position.change_location(random.randint(grid_domain[0] // 2, grid_domain[1] // 3),
+                                                random.randint(grid_range[0] // 2, grid_range[1] // 3))
+        # If the starting location is already taken, it will keep changing locations until it finds an empty one
+        while zombies[index].position.get_location() in starting_zombie_location[index]:
+            zombies[index].position.change_location(random.randint(grid_domain[0] // 2, grid_domain[1] // 3),
+                                                    random.randint(grid_range[0] // 2, grid_range[1] // 3))
+
+    while len(humans) != 0 and len(zombies) != 0:
+        for current_human in humans:
+            if current_human.health <= 0:
+                transfer_position = current_human.position
+                humans.remove(current_human)
+                zombies.append(Infected())
+                zombies[-1].position = transfer_position
+                break
+
+            temp_location = current_human.position
+            current_human.walk()
+            while not inside_grid(current_human):
+                current_human.position = temp_location
+                current_human.walk()
+
+            for current_zombie in zombies:
+                if current_zombie.health <= 0:
+                    zombies.remove(current_zombie)
+                    break
+
+                if current_human.position.colliding(current_zombie.position):
+                    current_human.health -= current_zombie.strength
+                    current_zombie.health -= current_human.strength
+
+                temp_location = current_zombie.position
+                current_zombie.walk()
+                while not inside_grid(current_zombie):
+                    current_zombie.position = temp_location
+                    current_zombie.walk()
+
+
+simulation((-100, 100), (-100, 100), 100, 1)
