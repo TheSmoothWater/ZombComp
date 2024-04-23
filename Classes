@@ -1,7 +1,6 @@
 from __future__ import annotations
 import matplotlib.pyplot as plt
 import numpy as np
-import itertools
 import random
 
 
@@ -67,7 +66,6 @@ class Locomotory:
         # Humans and zombies will spawn in separate places and humans shouldn't overlap
         self.position: Point = Point(0, 0)
         self.strength = random.randint(0, 100)
-        self.removed: bool = False
 
     def get_health(self) -> int:
         return self.health
@@ -81,12 +79,12 @@ class Susceptible(Locomotory):
         # Understand this line later
         super().__init__()
         self.health = random.randint(75, 100)
-        self.position: Point = Point(0,0)
-        self.strength = random.randint(10,50)
+        self.position: Point = Point(0, 0)
+        self.strength = random.randint(10, 50)
 
     def walk(self) -> None:
-        self.position.shift_x(random.randint(-5,5))
-        self.position.shift_y(random.randint(-5,5))
+        self.position.shift_x(random.randint(-5, 5))
+        self.position.shift_y(random.randint(-5, 5))
 
     # Come back when other methods are complete
     def fight(self, zombie: Infected) -> None:
@@ -109,6 +107,7 @@ class Infected(Locomotory):
 
 
 class Warrior(Susceptible):
+
     def __init__(self):
         super().__init__()
         self.strength = random.randint(50, 100)
@@ -121,7 +120,7 @@ class Warrior(Susceptible):
 class Mutated(Infected):
     def __init__(self):
         super().__init__()
-        self.strength = random.randint(60,100)
+        self.strength = random.randint(60, 100)
 
     def walk(self):
         self.position.shift_x(random.randint(-8, 8))
@@ -133,14 +132,15 @@ class Mutated(Infected):
 
 
 # Make sure domain and range start from negatives just in case
-def simulation(grid_domain: tuple[int, int], grid_range: tuple[int, int], start_num_of_susceptible: int, start_num_of_infected: int)-> None:
+def simulation(grid_domain: tuple[int, int], grid_range: tuple[int, int],
+               start_num_of_susceptible: int, start_num_of_infected: int) -> None:
+
     def inside_grid(being: Locomotory) -> bool:
         # In case the simplified expression doesn't work
         # (being.position.xcord >= grid_domain[0] and being.position.xcord <= grid_domain[1]
         #  and being.position.ycord >= grid_range[0] and being.position.ycord <= grid_range[1])
         return (grid_domain[0] <= being.position.xcord <= grid_domain[1]
                 and grid_range[0] <= being.position.ycord <= grid_range[1])
-
 
     if grid_domain[0] < 100 and grid_domain[1] < 100 or grid_range[0] < 100 and grid_range[1] < 100:
         raise ValueError("Grid Domain or Grid Domain should be at least 100.")
@@ -178,6 +178,8 @@ def simulation(grid_domain: tuple[int, int], grid_range: tuple[int, int], start_
 
     while len(humans) != 0 and len(zombies) != 0:
         for current_human in humans:
+            warrior_chance: int = random.randint(1, 100)
+
             if current_human.health <= 0:
                 transfer_position = current_human.position
                 humans.remove(current_human)
@@ -191,7 +193,14 @@ def simulation(grid_domain: tuple[int, int], grid_range: tuple[int, int], start_
                 current_human.position = temp_location
                 current_human.walk()
 
+            if warrior_chance < 21:
+                transfer_position = current_human.position
+                humans.remove(current_human)
+                humans.append(Warrior())
+                humans[-1].position = transfer_position
+
             for current_zombie in zombies:
+                mutated_chance = random.randint(1, 100)
                 if current_zombie.health <= 0:
                     zombies.remove(current_zombie)
                     break
@@ -205,6 +214,16 @@ def simulation(grid_domain: tuple[int, int], grid_range: tuple[int, int], start_
                 while not inside_grid(current_zombie):
                     current_zombie.position = temp_location
                     current_zombie.walk()
+                if mutated_chance < 5:
+                    temp_location = current_zombie.position
+                    zombies.remove(current_zombie)
+                    zombies.append(Mutated())
+                    zombies[-1].position = temp_location
+
+                print(f'This zombie\'s health: {current_zombie.health}')
+
+    print(f'Humans remaining: {len(humans)}')
+    print(f'Zombies remaining: {len(zombies)}')
 
 
 simulation((-100, 100), (-100, 100), 100, 1)
