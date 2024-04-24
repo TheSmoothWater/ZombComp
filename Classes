@@ -1,5 +1,6 @@
 from __future__ import annotations
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 import numpy as np
 import random
 
@@ -46,31 +47,31 @@ class Locomotory:
 class Susceptible(Locomotory):
     def __init__(self):
         super().__init__()
-        self.health = random.randint(30, 50)
+        self.health = random.randint(25, 50)
         self.strength = random.randint(10, 25)
 
 
 class Infected(Locomotory):
     def __init__(self):
         super().__init__()
-        self.health = random.randint(1, 25)
-        self.strength = random.randint(30, 50)
+        self.health = random.randint(10, 25)
+        self.strength = random.randint(10, 50)
         self.walk_range = 3
 
 
 class Warrior(Susceptible):
     def __init__(self):
         super().__init__()
-        self.health = random.randint(50, 75)
-        self.strength = random.randint(30, 100)
+        self.health = random.randint(40, 75)
+        self.strength = random.randint(20, 100)
         self.walk_range = 10
 
 
 class Mutated(Infected):
     def __init__(self):
         super().__init__()
-        self.health = random.randint(50, 100)
-        self.strength = random.randint(50, 75)
+        self.health = random.randint(25, 80)
+        self.strength = random.randint(30, 80)
         self.walk_range = 7
 
 
@@ -80,42 +81,43 @@ def simulation(grid_domain: int, grid_range: int,
     def inside_grid(creature: Locomotory) -> bool:
         return 0 <= creature.point.xcord <= grid_domain and 0 <= creature.point.ycord <= grid_range
 
+    # def update_graph():
+
+    #fig, ax = plt.subplots()
+    #iteration_number = 0
+
     all_susceptible: list[Susceptible] = []
-    all_susceptible_locations: list[tuple[int, int]] = []
+    starting_susceptible_locations: list[tuple[int, int]] = []
     all_infected: list[Infected] = []
-    all_infected_locations: list[tuple[int, int]] = []
+    starting_infected_locations: list[tuple[int, int]] = []
     all_warriors: list[Warrior] = []
-    all_warriors_locations: list[tuple[int, int]] = []
     all_mutated: list[Mutated] = []
-    all_mutated_locations: list[tuple[int, int]] = []
 
     for i in range(start_num_of_susceptible):
         starting_location: tuple[int, int] = random.randint(0, grid_domain), random.randint(0, grid_domain // 5)
-        while starting_location in all_susceptible_locations:
+        while starting_location in starting_susceptible_locations:
             starting_location: tuple[int, int] = random.randint(0, grid_domain), random.randint(0, grid_domain // 5)
-        all_susceptible_locations.append(starting_location)
+        starting_susceptible_locations.append(starting_location)
         all_susceptible.append(Susceptible())
         all_susceptible[-1].point.change_location(starting_location)
-    print("First initialization done")
 
     for j in range(start_num_of_infected):
-        starting_location: tuple[int, int] = random.randint(0, grid_domain), random.randint(grid_domain // 2, 
+        starting_location: tuple[int, int] = random.randint(0, grid_domain), random.randint(grid_domain // 2,
                                                                                             grid_domain)
-        while starting_location in all_infected_locations:
+        while starting_location in starting_infected_locations:
             starting_location: tuple[int, int] = random.randint(0, grid_domain), random.randint(grid_domain // 2,
                                                                                                 grid_domain)
-        all_infected_locations.append(starting_location)
+        starting_infected_locations.append(starting_location)
         all_infected.append(Infected())
         all_infected[-1].point.change_location(starting_location)
-    print("Second initialization done")
 
-    def simulate_turn(current_creature: Locomotory, enemy_list: list[Locomotory], 
+    def simulate_turn(current_creature: Locomotory, enemy_list: list[Locomotory],
                       enemy_subclass_list: list[Locomotory]) -> None:
-        
+
         def generate_random_walk() -> tuple[int, int]:
-            current_creature_random_walk: tuple[int, int] = (random.randint(-1 * current_creature.walk_range, 
+            current_creature_random_walk: tuple[int, int] = (random.randint(-1 * current_creature.walk_range,
                                                                             current_creature.walk_range),
-                                                             random.randint(-1 * current_creature.walk_range, 
+                                                             random.randint(-1 * current_creature.walk_range,
                                                                             current_creature.walk_range))
             return current_creature_random_walk
 
@@ -136,11 +138,13 @@ def simulation(grid_domain: int, grid_range: int,
         for current_susceptible in all_susceptible:
             warrior_rate: int = random.randint(1, 1000)
             if current_susceptible.is_dead():
+                temporary_location: Point = current_susceptible.point
+                all_infected.append(Infected())
+                all_infected[-1].point = temporary_location
                 all_susceptible.remove(current_susceptible)
             else:
                 simulate_turn(current_susceptible, all_infected, all_mutated)
             if warrior_rate < 101 and not current_susceptible.is_dead():
-                print("Do we make it here")
                 temporary_location: Point = current_susceptible.point
                 all_warriors.append(Warrior())
                 all_warriors[-1].point = temporary_location
@@ -149,6 +153,9 @@ def simulation(grid_domain: int, grid_range: int,
         for current_warrior in all_warriors:
             if current_warrior.is_dead():
                 all_warriors.remove(current_warrior)
+                temporary_location: Point = current_warrior.point
+                all_infected.append(Infected())
+                all_infected[-1].point = temporary_location
             else:
                 simulate_turn(current_warrior, all_infected, all_mutated)
 
@@ -158,7 +165,7 @@ def simulation(grid_domain: int, grid_range: int,
                 all_infected.remove(current_infected)
             else:
                 simulate_turn(current_infected, all_susceptible, all_warriors)
-            if mutation_rate < 11 and not current_infected.is_dead():
+            if mutation_rate < 101 and not current_infected.is_dead():
                 temporary_location: Point = current_infected.point
                 all_mutated.append(Mutated())
                 all_mutated[-1].point = temporary_location
@@ -170,10 +177,9 @@ def simulation(grid_domain: int, grid_range: int,
             else:
                 simulate_turn(current_mutated, all_susceptible, all_warriors)
 
-        print("Mutated loop is successful")
+
     print(f'Number of susceptible: {len(all_susceptible)}, Number of infected : {len(all_infected)},'
-          f'Number of warriors: {len(all_warriors)}, Number of mutated : {len(all_mutated)}')
+          f' Number of warriors: {len(all_warriors)}, Number of mutated : {len(all_mutated)}')
 
 
-simulation(100, 100, 1, 1)
-
+simulation(100, 100, 100, 5)
