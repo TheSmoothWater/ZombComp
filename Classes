@@ -1,9 +1,10 @@
 from __future__ import annotations
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import matplotlib as mpl
 import numpy as np
 import random
-
+mpl.use('TkAgg')
 
 class Point:
     def __init__(self, xcord: int, ycord: int) -> None:
@@ -81,11 +82,6 @@ def simulation(grid_domain: int, grid_range: int,
     def inside_grid(creature: Locomotory) -> bool:
         return 0 <= creature.point.xcord <= grid_domain and 0 <= creature.point.ycord <= grid_range
 
-    # def update_graph():
-
-    #fig, ax = plt.subplots()
-    #iteration_number = 0
-
     all_susceptible: list[Susceptible] = []
     starting_susceptible_locations: list[tuple[int, int]] = []
     all_infected: list[Infected] = []
@@ -113,7 +109,6 @@ def simulation(grid_domain: int, grid_range: int,
 
     def simulate_turn(current_creature: Locomotory, enemy_list: list[Locomotory],
                       enemy_subclass_list: list[Locomotory]) -> None:
-
         def generate_random_walk() -> tuple[int, int]:
             current_creature_random_walk: tuple[int, int] = (random.randint(-1 * current_creature.walk_range,
                                                                             current_creature.walk_range),
@@ -132,9 +127,14 @@ def simulation(grid_domain: int, grid_range: int,
         for enemy in enemy_subclass_list:
             if current_creature.point.colliding(enemy.point):
                 current_creature.defend(enemy)
-    # If infinite loop double check
-    while (len(all_susceptible) > 0 or len(all_warriors) > 0) and (len(all_infected) > 0 or len(all_mutated) > 0):
 
+    fig, ax = plt.subplots()
+
+    x_axis = np.array([1, 2, 3, 4])
+    artists: list = []
+    colors: list = ['tab:green', 'tab:blue', 'tab:red', 'tab:orange',]
+
+    while (len(all_susceptible) > 0 or len(all_warriors) > 0) and (len(all_infected) > 0 or len(all_mutated) > 0):
         for current_susceptible in all_susceptible:
             warrior_rate: int = random.randint(1, 1000)
             if current_susceptible.is_dead():
@@ -177,9 +177,13 @@ def simulation(grid_domain: int, grid_range: int,
             else:
                 simulate_turn(current_mutated, all_susceptible, all_warriors)
 
+        data = np.array([len(all_susceptible), len(all_warriors), len(all_infected), len(all_mutated)])
+        container = ax.barh(x_axis, data, color=colors)
+        artists.append(container)
 
     print(f'Number of susceptible: {len(all_susceptible)}, Number of infected : {len(all_infected)},'
           f' Number of warriors: {len(all_warriors)}, Number of mutated : {len(all_mutated)}')
+    ani = animation.ArtistAnimation(fig=fig, artists=artists, interval=400)
+    plt.show()
 
-
-simulation(100, 100, 100, 5)
+simulation(500, 500, 1000, 10)
